@@ -1,5 +1,6 @@
-const API_BASE = 'http://192.168.0.204:8000';
+const API_BASE = window.ECHO_API_BASE || window.location.origin;
 let currentUserRole = null; 
+let eventCountdownTimer = null;
 
 function hideAllViews() {
   document.getElementById('landing-page').classList.add('hidden');
@@ -37,20 +38,18 @@ function handleCodeSubmit() {
   const codeInput = document.getElementById('access-code').value.trim().toUpperCase();
 
   if (codeInput === 'ADMIN') {
+    // This only opens the sign-in view; server authorization is based solely on
+    // the HttpOnly admin session issued after valid credentials are checked.
     currentUserRole = 'ADMIN';
     hideAllViews();
     document.getElementById('admin-view').classList.remove('hidden');
     document.getElementById('admin-login-section').classList.remove('hidden');
     document.getElementById('admin-dashboard-section').classList.add('hidden');
     updateTopBar('ROLE: ADMIN');
+    restoreAdminSession();
   } 
   else if (codeInput === 'STUDENT') {
-    currentUserRole = 'STUDENT';
-    hideAllViews();
-    document.getElementById('student-view').classList.remove('hidden');
-    document.getElementById('student-welcome-text').textContent = 'Logged in as Student. Click Register on any event to verify your Roll Number.';
-    updateTopBar('ROLE: STUDENT');
-    loadStudentEvents('All');
+    openStudentIdDialog();
   } 
   else if (codeInput === 'VISITOR') {
     let savedVisitor = localStorage.getItem('visitorName') || '';
@@ -65,13 +64,72 @@ function handleCodeSubmit() {
     currentUserRole = 'VISITOR';
     hideAllViews();
     document.getElementById('student-view').classList.remove('hidden');
-    document.getElementById('student-welcome-text').textContent = `Welcome Visitor: ${visitorName.trim()}. Click Register on any event to join.`;
+    document.getElementById('student-welcome-text').textContent = `Welcome, ${visitorName.trim()}.`;
+    document.getElementById('student-event-welcome').textContent = `Welcome Visitor: ${visitorName.trim()}. Select an event to learn more.`;
     updateTopBar(`VISITOR: ${visitorName.trim()}`);
-    loadStudentEvents('All');
+    switchStudentSubTab('campus', document.querySelector('.wheel-center-hub'));
   } 
   else {
     alert('Invalid code! Please enter STUDENT, VISITOR, or ADMIN.');
   }
+}
+
+function openStudentIdDialog() {
+  const dialog = document.getElementById('student-id-dialog');
+  const input = document.getElementById('student-id-input');
+  const error = document.getElementById('student-id-error');
+  if (!dialog || dialog.open) return;
+  if (input) input.value = '';
+  if (error) error.textContent = '';
+  if (!dialog.dataset.cancelHandlerBound) {
+    dialog.addEventListener('cancel', () => cancelStudentId());
+    dialog.dataset.cancelHandlerBound = 'true';
+  }
+  dialog.showModal();
+  requestAnimationFrame(() => input?.focus());
+}
+
+function continueStudentId(event) {
+  event.preventDefault();
+  const input = document.getElementById('student-id-input');
+  const error = document.getElementById('student-id-error');
+  const organizationId = (input?.value || '').trim();
+  if (!organizationId) {
+    if (error) error.textContent = 'Enter your ID number to continue.';
+    input?.focus();
+    return;
+  }
+
+  // The supplied ID is only checked for non-emptiness. It is never stored or sent.
+  if (input) input.value = '';
+  if (error) error.textContent = '';
+  document.getElementById('student-id-dialog')?.close();
+  currentUserRole = 'STUDENT';
+  hideAllViews();
+  document.getElementById('student-view').classList.remove('hidden');
+  document.getElementById('student-welcome-text').textContent = 'Welcome, Student.';
+  document.getElementById('student-event-welcome').textContent = 'Logged in as Student. Select an event to view details or register with your Roll Number.';
+  updateTopBar('ROLE: STUDENT');
+  switchStudentSubTab('campus', document.querySelector('.wheel-center-hub'));
+}
+
+function cancelStudentId() {
+  const dialog = document.getElementById('student-id-dialog');
+  if (dialog?.open) dialog.close();
+  const idInput = document.getElementById('student-id-input');
+  if (idInput) idInput.value = '';
+  const error = document.getElementById('student-id-error');
+  if (error) error.textContent = '';
+  const codeInput = document.getElementById('access-code');
+  if (codeInput) {
+    codeInput.value = '';
+    updateCodeSlotsUI('');
+  }
+  document.querySelectorAll('.portal-option').forEach(button => {
+    button.classList.remove('is-selected');
+    button.setAttribute('aria-pressed', 'false');
+  });
+  document.querySelector('[data-role="STUDENT"]')?.focus();
 }
 
 async function loadStudentEvents(statusFilter = 'All') {
@@ -81,32 +139,45 @@ async function loadStudentEvents(statusFilter = 'All') {
   });
 
   const grid = document.getElementById('student-events-grid');
+  const countBadge = document.getElementById('student-event-count');
   if(!grid) return; 
   grid.innerHTML = '<p class="muted">Loading events from server...</p>';
+  if (countBadge) countBadge.textContent = 'Loading count…';
 
   try {
-    const url = statusFilter === 'All' 
-      ? `${API_BASE}/api/activities` 
-      : `${API_BASE}/api/activities?status=${encodeURIComponent(statusFilter)}`;
+    // Use one canonical database list for both the total badge and filters.
+    const url = `${API_BASE}/api/activities`;
 
     const response = await fetch(url);
     const data = await response.json();
 
     if (!response.ok) {
+      if (countBadge) countBadge.textContent = 'Unavailable';
       alert(data.detail || 'Error loading activities.');
       return;
     }
 
-    renderStudentEvents(Array.isArray(data) ? data : []);
+    const events = Array.isArray(data) ? data : [];
+    if (countBadge) countBadge.textContent = `${events.length} total ${events.length === 1 ? 'event' : 'events'}`;
+    renderStudentEvents(statusFilter === 'All' ? events : events.filter(event => event.status === statusFilter));
   } catch (error) {
     console.error('Fetch error:', error);
+    if (countBadge) countBadge.textContent = 'Unavailable';
     grid.innerHTML = `<p class="muted" style="color:#ef4444;">Could not connect to ${API_BASE}. Make sure the backend server is running.</p>`;
   }
 }
 
 function renderStudentEvents(events) {
   const grid = document.getElementById('student-events-grid');
+  if (eventCountdownTimer) {
+    clearInterval(eventCountdownTimer);
+    eventCountdownTimer = null;
+  }
   grid.innerHTML = '';
+
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
 
   if (events.length === 0) {
     grid.innerHTML = '<div class="card"><p class="muted">No activities found for this filter.</p></div>';
@@ -118,32 +189,126 @@ function renderStudentEvents(events) {
     card.className = 'card event-card';
 
     const isCompleted = event.status === 'Completed';
-    const eventId = JSON.stringify(event.id);
-    const participationType = JSON.stringify(event.participation_type || "Individual");
-    const eventTitle = JSON.stringify(event.title);
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(event.start_time || '') && /^\d{4}-\d{2}-\d{2}$/.test(event.end_time || '');
+    const timingStatus = isCompleted ? 'EXPIRED' : (event.timing_status || event.status || 'Unknown').toUpperCase();
+    let sourceLink = '';
+    try {
+      const metadata = typeof event.metadata === 'string' ? JSON.parse(event.metadata) : event.metadata;
+      const source = metadata?.official_source;
+      if (typeof source === 'string' && (/^https:\/\/www\.bits-pilani\.ac\.in\//i.test(source) || /^https:\/\/www\.atmos-bits\.com\/?$/i.test(source))) {
+        sourceLink = `<a class="event-source-link" href="${escapeHtml(source)}" target="_blank" rel="noopener noreferrer">Official event details ↗</a>`;
+      }
+    } catch (_) { /* Malformed optional metadata does not block event rendering. */ }
+
+    const formatDate = value => {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+      if (!match) return value ? value.replace('T', ' ') : 'TBA';
+      const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+      return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date);
+    };
 
     card.innerHTML = `
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-          <span class="pill">${event.category || 'General'} • ${event.participation_type || 'Individual'}</span>
-          <span class="badge">${event.status || 'Active'}</span>
+          <span class="pill">${escapeHtml(event.category || 'General')} • ${escapeHtml(event.participation_type || 'Individual')}</span>
+          <span class="badge event-time-status" data-event-time-status>${escapeHtml(timingStatus)}</span>
         </div>
-        <h3>${event.title}</h3>
+        <h3>${escapeHtml(event.title)}</h3>
         <div class="event-meta">
-          <div><strong>📍 Venue:</strong> ${event.venue || 'TBA'}</div>
-          <div><strong>🕒 Start:</strong> ${event.start_time ? event.start_time.replace('T', ' ') : 'TBA'}</div>
-          ${event.end_time ? `<div><strong>🏁 End:</strong> ${event.end_time.replace('T', ' ')}</div>` : ''}
-          <div><strong>📋 Instructions:</strong> ${event.participant_instructions || 'None'}</div>
+          <div><strong>📍 Venue:</strong> ${escapeHtml(event.venue || 'TBA')}</div>
+          <div><strong>🕒 Start:</strong> ${escapeHtml(formatDate(event.start_time))}${dateOnly ? ' · Asia/Kolkata date' : ''}</div>
+          ${event.end_time ? `<div><strong>🏁 End:</strong> ${escapeHtml(formatDate(event.end_time))}</div>` : ''}
+          <div><strong>📋 Instructions:</strong> ${escapeHtml(event.participant_instructions || 'None')}</div>
+          ${sourceLink ? `<div>${sourceLink}</div>` : ''}
+          ${dateOnly ? '<div class="event-countdown" data-event-countdown hidden><strong>Date countdown</strong><span data-countdown-value></span><small>Uses 00:00 IST on the event start date.</small></div>' : ''}
         </div>
       </div>
       <button class="btn ${isCompleted ? 'btn-secondary' : 'btn-primary'} full-width" 
-              ${isCompleted ? 'disabled' : ''} 
-              onclick='handleEventRegistration(${eventId}, ${participationType}, ${eventTitle})'>
-        ${isCompleted ? 'Event Completed' : 'Register'}
+              ${isCompleted ? 'disabled' : ''}>
+        ${isCompleted ? 'Event Expired' : 'Register'}
       </button>
     `;
 
+    card.dataset.activityId = String(event.id);
+    card.dataset.lifecycleStatus = String(event.status || '');
+    if (dateOnly) {
+      card.dataset.startDate = event.start_time;
+      card.dataset.endDate = event.end_time;
+    }
+    card.querySelector('button').addEventListener('click', () =>
+      handleEventRegistration(event.id, event.participation_type || 'Individual', event.title));
+
     grid.appendChild(card);
+  });
+  updateEventCountdowns();
+  if (grid.querySelector('[data-event-countdown]')) eventCountdownTimer = setInterval(updateEventCountdowns, 1000);
+}
+
+function istMidnightTimestamp(dateText, nextDay = false) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText || '');
+  if (!match) return NaN;
+  const day = Number(match[3]) + (nextDay ? 1 : 0);
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, day) - (5 * 60 + 30) * 60 * 1000;
+}
+
+function getDateEventState(startDate, endDate, now = Date.now()) {
+  const start = istMidnightTimestamp(startDate);
+  const end = istMidnightTimestamp(endDate, true);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  if (now < start) return { status: 'UPCOMING', secondsRemaining: Math.max(0, Math.floor((start - now) / 1000)) };
+  if (now < end) return { status: 'ONGOING', secondsRemaining: 0 };
+  return { status: 'EXPIRED', secondsRemaining: 0 };
+}
+
+function updateEventCountdowns() {
+  const grid = document.getElementById('student-events-grid');
+  if (!grid) return;
+  const now = Date.now();
+  grid.querySelectorAll('.event-card[data-start-date][data-end-date]').forEach(card => {
+    const state = getDateEventState(card.dataset.startDate, card.dataset.endDate, now);
+    if (!state) return;
+
+    const badge = card.querySelector('[data-event-time-status]');
+    const countdown = card.querySelector('[data-event-countdown]');
+    const countdownValue = card.querySelector('[data-countdown-value]');
+    const registerButton = card.querySelector('button');
+    if (state.status === 'UPCOMING') {
+      if (badge) badge.textContent = state.status;
+      if (countdown) countdown.hidden = false;
+      if (countdownValue) {
+        const seconds = state.secondsRemaining;
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+        countdownValue.textContent = `${days} days ${String(hours).padStart(2, '0')} hours ${String(minutes).padStart(2, '0')} minutes ${String(remainingSeconds).padStart(2, '0')} seconds`;
+      }
+      if (registerButton && card.dataset.lifecycleStatus !== 'Completed') {
+        registerButton.disabled = false;
+        registerButton.textContent = 'Register';
+        registerButton.classList.add('btn-primary');
+        registerButton.classList.remove('btn-secondary');
+      }
+    } else if (state.status === 'ONGOING') {
+      if (badge) badge.textContent = state.status;
+      if (countdown) countdown.hidden = true;
+      if (registerButton && card.dataset.lifecycleStatus !== 'Completed') {
+        registerButton.disabled = false;
+        registerButton.textContent = 'Event in Progress';
+        registerButton.classList.add('btn-primary');
+        registerButton.classList.remove('btn-secondary');
+      }
+    } else {
+      if (badge) badge.textContent = state.status;
+      if (countdown) countdown.hidden = false;
+      if (countdownValue) countdownValue.textContent = 'Event ended';
+      if (registerButton) {
+        registerButton.disabled = true;
+        registerButton.textContent = 'Event Expired';
+        registerButton.classList.add('btn-secondary');
+        registerButton.classList.remove('btn-primary');
+      }
+    }
   });
 }
 
@@ -206,24 +371,67 @@ async function handleEventRegistration(activityId, participationType, eventTitle
 
 async function handleAdminLogin(event) {
   event.preventDefault();
-  const email = document.getElementById('admin-email').value.trim();
-  const password = document.getElementById('admin-password').value.trim();
+  const username = document.getElementById('admin-username').value.trim();
+  const passwordInput = document.getElementById('admin-password');
+  const password = passwordInput.value;
+  const error = document.getElementById('admin-login-error');
+  error.hidden = true;
+  error.textContent = '';
 
   try {
     const response = await fetch(`${API_BASE}/api/host/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      credentials: 'include',
+      body: JSON.stringify({ username, password })
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) return alert(data.detail || 'Invalid credentials!');
+    const data = await response.json().catch(() => ({}));
+    passwordInput.value = '';
+    if (!response.ok || !data.success) {
+      error.textContent = response.status === 401
+        ? 'Invalid username or password'
+        : (data.detail || 'Unable to sign in. Try again later.');
+      error.hidden = false;
+      return;
+    }
+    showAdminDashboard();
+  } catch (_) {
+    passwordInput.value = '';
+    error.textContent = 'Unable to connect to the sign-in service.';
+    error.hidden = false;
+  }
+}
 
-    document.getElementById('admin-login-section').classList.add('hidden');
-    document.getElementById('admin-dashboard-section').classList.remove('hidden');
-    loadAdminDashboard();
-  } catch (error) {
-    alert('Failed to connect to backend login.');
+function showAdminDashboard() {
+  document.getElementById('admin-login-section').classList.add('hidden');
+  document.getElementById('admin-dashboard-section').classList.remove('hidden');
+  loadAdminDashboard();
+}
+
+async function restoreAdminSession() {
+  try {
+    const response = await fetch(`${API_BASE}/api/host/session`, { credentials: 'include' });
+    if (response.ok) showAdminDashboard();
+  } catch (_) {
+    // Keep the login form available when the session check cannot reach the server.
+  }
+}
+
+async function logoutAdmin() {
+  const error = document.getElementById('admin-login-error');
+  try {
+    const response = await fetch(`${API_BASE}/api/host/logout`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    if (!response.ok) throw new Error('Logout failed');
+    document.getElementById('admin-password').value = '';
+    document.getElementById('admin-username').value = '';
+    showLandingPage();
+  } catch (_) {
+    error.textContent = 'Unable to log out. Check your connection and try again.';
+    error.hidden = false;
   }
 }
 
@@ -234,10 +442,12 @@ async function loadAdminDashboard() {
 
   try {
     // FIXED: Fetch Drafts AND Published/Ongoing/Completed so they all show up
-    const draftRes = await fetch(`${API_BASE}/api/activities?status=Draft`);
+    const draftRes = await fetch(`${API_BASE}/api/activities?status=Draft`, { credentials: 'include' });
+    if (draftRes.status === 401) return showAdminLoginExpired();
     const drafts = await draftRes.json();
     
-    const otherRes = await fetch(`${API_BASE}/api/activities`); 
+    const otherRes = await fetch(`${API_BASE}/api/activities`, { credentials: 'include' });
+    if (otherRes.status === 401) return showAdminLoginExpired();
     const others = await otherRes.json();
     
     const activitiesList = [...drafts, ...others];
@@ -249,15 +459,25 @@ async function loadAdminDashboard() {
 
     const detailedActivities = await Promise.all(
       activitiesList.map(async act => {
-        const detailRes = await fetch(`${API_BASE}/api/activities/${act.id}?view=host`);
+        const detailRes = await fetch(`${API_BASE}/api/activities/${act.id}?view=host`, { credentials: 'include' });
+        if (detailRes.status === 401) throw new Error('ADMIN_SESSION_EXPIRED');
         return detailRes.ok ? await detailRes.json() : act;
       })
     );
 
     renderAdminActivities(detailedActivities);
   } catch (error) {
+    if (error.message === 'ADMIN_SESSION_EXPIRED') return showAdminLoginExpired();
     container.innerHTML = '<p class="muted" style="color:#ef4444;">Error loading dashboard. Check backend.</p>';
   }
+}
+
+function showAdminLoginExpired() {
+  document.getElementById('admin-dashboard-section').classList.add('hidden');
+  document.getElementById('admin-login-section').classList.remove('hidden');
+  const error = document.getElementById('admin-login-error');
+  error.textContent = 'Your admin session expired. Please sign in again.';
+  error.hidden = false;
 }
 
 function renderAdminActivities(activities) {
@@ -327,6 +547,7 @@ async function handleChangeStatus(activityId, newStatus) {
     const response = await fetch(`${API_BASE}/api/activities/${activityId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ status: newStatus })
     });
 
@@ -344,6 +565,7 @@ async function handleCheckIn(registrationId) {
     const response = await fetch(`${API_BASE}/api/registrations/${registrationId}/checkin`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ checked_in: true })
     });
 
@@ -375,6 +597,7 @@ async function handleCreateActivity(event) {
     const response = await fetch(`${API_BASE}/api/activities`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload)
     });
 

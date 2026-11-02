@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Larper College — Campus Activity Platform</title>
+  <title>loopIn — Campus Activity Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="stylesheet" href="/assets/topography-background.css?v=2" />
 </head>
 <body>
 
@@ -19,9 +20,9 @@
 
   <header class="navbar glass-panel">
     <div class="nav-brand" onclick="showLandingPage()">
-      <span class="logo-badge">LC</span>
+      <span class="logo-badge">LI</span>
       <div>
-        <h1>Larper College</h1>
+        <h1>loopIn</h1>
         <p>Annual Sports & Cultural Activity OS 2026</p>
       </div>
     </div>
@@ -36,108 +37,146 @@
   <main class="container">
 
     <!-- 1. LANDING PAGE -->
-    <div id="landing-page" class="landing-scroll-wrapper">
-      <section class="hero-stage">
-        <div class="hero-floating-vectors" aria-hidden="true">
-          <svg class="float-vec vec-left" viewBox="0 0 200 200" fill="none">
-            <circle cx="100" cy="100" r="80" stroke="rgba(0,210,255,0.22)" stroke-width="1.5"/>
-            <ellipse cx="100" cy="100" rx="80" ry="32" stroke="rgba(0,210,255,0.22)" stroke-width="1.2"/>
-            <ellipse cx="100" cy="100" rx="32" ry="80" stroke="rgba(0,81,255,0.35)" stroke-width="1.2"/>
-          </svg>
+    <section id="landing-page" class="landing-page">
+      <div class="role-screen" id="role-screen">
+        <div id="role-topography" class="role-topography" aria-hidden="true"></div>
+        <div class="landing-copy">
+          <span class="minimal-pill"><span class="live-dot"></span> ANNUAL INTER-COLLEGIATE PORTAL · 2026</span>
+          <p class="landing-kicker">YOUR CAMPUS, IN MOTION</p>
+          <h2 class="landing-title">Make room<br><span>for what’s next.</span></h2>
+          <p class="hero-subtext">Explore events, find your way around, and stay connected to campus.</p>
+          <p class="landing-reference">Campus activity portal · independent student project</p>
         </div>
-        <div class="minimal-pill">
-          <span class="live-dot"></span> ANNUAL INTER-COLLEGIATE PORTAL 2026
+        <section class="portal-card glass-panel" aria-labelledby="portal-title">
+          <div class="portal-card-heading"><span class="pill">WELCOME</span><span class="portal-step">01 / 01</span></div>
+          <h2 id="portal-title">Choose your space</h2>
+          <p class="muted">Pick a portal to continue.</p>
+          <div class="portal-options" role="group" aria-label="Choose a portal">
+            <button type="button" class="portal-option" data-role="STUDENT" aria-pressed="false" onclick="selectPortal('STUDENT', this)">
+              <span class="portal-icon" aria-hidden="true">↗</span><span><strong>Student</strong><small>Events, map &amp; campus updates</small></span><span class="portal-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="portal-option" data-role="VISITOR" aria-pressed="false" onclick="selectPortal('VISITOR', this)">
+              <span class="portal-icon" aria-hidden="true">⌖</span><span><strong>Visitor</strong><small>Discover what’s happening</small></span><span class="portal-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="portal-option" data-role="ADMIN" aria-pressed="false" onclick="selectPortal('ADMIN', this)">
+              <span class="portal-icon" aria-hidden="true">▤</span><span><strong>Admin</strong><small>Manage events &amp; check-ins</small></span><span class="portal-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+          <label class="portal-code-label" for="access-code">Or enter a portal code</label>
+          <input type="text" id="access-code" maxlength="7" placeholder="STUDENT / VISITOR / ADMIN" autocomplete="off" oninput="updateCodeSlotsUI(this.value)" onkeydown="if(event.key === 'Enter') handleCodeSubmit()" aria-describedby="portal-code-hint" />
+          <span id="portal-code-hint" class="portal-code-hint">This demo uses role codes, not personal accounts.</span>
+          <button type="button" class="portal-start" onclick="handleCodeSubmit()"><span>Start</span><span aria-hidden="true">→</span></button>
+        </section>
+        <p class="campus-image-note">Campus image used as a visual backdrop · not an official BITS Pilani website.</p>
+      </div>
+
+      <dialog class="student-id-dialog" id="student-id-dialog" aria-labelledby="student-id-title" aria-describedby="student-id-description">
+        <form class="student-id-form" onsubmit="continueStudentId(event)">
+          <span class="pill">STUDENT ACCESS</span>
+          <h2 id="student-id-title">Student ID</h2>
+          <p id="student-id-description">Enter your organization-provided ID number.</p>
+          <label for="student-id-input">ID Number</label>
+          <input id="student-id-input" name="student-id" type="text" placeholder="Enter your ID number" autocomplete="off" aria-describedby="student-id-error" />
+          <p id="student-id-error" class="student-id-error" role="alert" aria-live="polite"></p>
+          <div class="student-id-actions">
+            <button type="submit" class="btn btn-primary">Continue</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelStudentId()">Cancel</button>
+          </div>
+        </form>
+      </dialog>
+
+      <section id="loopin-branding" class="landing-extra brand-section" aria-labelledby="brand-title">
+        <div class="brand-topography" aria-hidden="true"></div>
+        <div class="brand-glow brand-glow-one" aria-hidden="true"></div>
+        <div class="brand-glow brand-glow-two" aria-hidden="true"></div>
+        <div class="brand-content">
+          <span class="brand-eyebrow">A STUDENT-BUILT CAMPUS EXPERIENCE</span>
+          <h2 id="brand-title">loopIn</h2>
+          <p>Where Ideas Become Reality.</p>
+          <a class="brand-scroll-link" href="#official-campus-events">Explore campus life <span aria-hidden="true">↓</span></a>
         </div>
-        <h1 class="warp-title" id="warp-heading" aria-label="Larper College">
-          <span class="warp-word"><span class="warp-char">L</span><span class="warp-char">a</span><span class="warp-char">r</span><span class="warp-char">p</span><span class="warp-char">e</span><span class="warp-char">r</span></span>
-          <span class="warp-word"><span class="warp-char">C</span><span class="warp-char">o</span><span class="warp-char">l</span><span class="warp-char">l</span><span class="warp-char">e</span><span class="warp-char">g</span><span class="warp-char">e</span></span>
-        </h1>
-        <p class="hero-subtext">Real-time arena schedules, conflict-free student registration, and live host telemetry.</p>
-        <div class="vector-decor-row">
-          <svg class="vector-badge" viewBox="0 0 120 40" fill="none">
-            <rect x="1" y="1" width="118" height="38" rx="19" stroke="rgba(0,210,255,0.35)" stroke-dasharray="4 4"/>
-            <circle cx="22" cy="20" r="6" fill="#00d2ff"/>
-            <path d="M40 20H98" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <span class="vector-caption">SCROLL DOWN TO ENTER ACCESS CODE</span>
-          <svg class="vector-badge" viewBox="0 0 120 40" fill="none">
-            <rect x="1" y="1" width="118" height="38" rx="19" stroke="rgba(0,210,255,0.35)"/>
-            <path d="M25 20L35 12V28L25 20Z" fill="#00d2ff"/>
-            <circle cx="95" cy="20" r="6" stroke="#00d2ff" stroke-width="2"/>
-          </svg>
-        </div>
-        <a href="#code-gate-section" class="scroll-indicator">
-          <span>Scroll to Identity Gate</span>
-          <div class="scroll-mouse"><div class="scroll-wheel"></div></div>
-        </a>
+        <span class="brand-coordinate" aria-hidden="true">17°32′ N · 78°34′ E</span>
       </section>
 
-      <section id="code-gate-section" class="code-gate-stage">
-        <div class="gate-glass-card">
-          <span class="pill">Identity Gate</span>
-          <h2 class="gate-heading">Enter Your Code</h2>
-          <p class="muted">Type <strong>STUDENT</strong>, <strong>VISITOR</strong>, or <strong>ADMIN</strong> to unlock your portal</p>
-          <div class="code-slots-container" id="code-slots-display" onclick="document.getElementById('access-code').focus()">
-            <div class="code-slot"><span>•</span></div>
-            <div class="code-slot"><span>•</span></div>
-            <div class="code-slot"><span>•</span></div>
-            <div class="code-slot"><span>•</span></div>
-            <div class="code-slot"><span>•</span></div>
-            <div class="code-slot"><span>•</span></div>
-            <div class="code-slot"><span>•</span></div>
-          </div>
-          <div class="form-group pill-input-wrapper">
-            <input type="text" id="access-code" maxlength="7" placeholder="Type STUDENT, VISITOR, or ADMIN..." autocomplete="off" oninput="updateCodeSlotsUI(this.value)" onkeydown="if(event.key === 'Enter') handleCodeSubmit()" />
-          </div>
-          <div class="quick-codes">
-            <span>Quick Select:</span>
-            <button type="button" class="btn-chip" onclick="syncSlotQuickCode('STUDENT')">STUDENT</button>
-            <button type="button" class="btn-chip" onclick="syncSlotQuickCode('VISITOR')">VISITOR</button>
-            <button type="button" class="btn-chip" onclick="syncSlotQuickCode('ADMIN')">ADMIN</button>
-          </div>
+      <section id="official-campus-events" class="landing-extra official-events-section" aria-labelledby="official-events-title">
+        <div class="official-events-heading">
+          <span class="brand-eyebrow">BITS PILANI · HYDERABAD CAMPUS</span>
+          <h2 id="official-events-title">Campus events &amp; festivals</h2>
+          <p>Selected entries from official BITS Pilani Hyderabad sources. Archive editions are marked past; the official fest archive does not publish future dates for these festivals.</p>
         </div>
-        <div class="corner-vector-art">
-          <svg viewBox="0 0 180 180" fill="none">
-            <circle cx="90" cy="90" r="72" stroke="rgba(0, 210, 255, 0.22)" stroke-width="1.5" stroke-dasharray="6 6"/>
-            <circle cx="90" cy="90" r="48" stroke="rgba(0, 102, 255, 0.4)" stroke-width="1.5"/>
-            <path d="M90 10V170M10 90H170" stroke="rgba(0, 210, 255, 0.15)" stroke-width="1"/>
-            <polygon points="90,55 120,110 60,110" stroke="#00d2ff" stroke-width="1.5" fill="rgba(0,210,255,0.08)"/>
-          </svg>
-          <span>VECTOR.SYS // LARPER-2026</span>
+        <div class="official-event-grid">
+          <article class="official-event-card">
+            <span class="official-event-status past">Past · 2023 edition</span>
+            <h3>Fervour Week</h3>
+            <p>The official page describes the fresher cultural week with student performances, club events, cultural showcases and a DJ night. The cited edition is Fervour ’23.</p>
+            <a href="https://www.bits-pilani.ac.in/hyderabad/events-festivals/?p=9974" target="_blank" rel="noopener noreferrer">Official event archive <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="official-event-card">
+            <span class="official-event-status past">Past · 2022 edition</span>
+            <h3>ATMOS</h3>
+            <p>The official archive identifies ATMOS as the Hyderabad campus techno-management festival and records the ATMOS ’22 edition as completed.</p>
+            <a href="https://www.bits-pilani.ac.in/hyderabad/events-festivals/" target="_blank" rel="noopener noreferrer">Official Hyderabad events page <span aria-hidden="true">↗</span></a>
+          </article>
+          <article class="official-event-card">
+            <span class="official-event-status past">Past · 2018 edition</span>
+            <h3>Arena</h3>
+            <p>The official page describes Arena as the Hyderabad campus annual sports festival. The linked edition is an archive, not an upcoming schedule.</p>
+            <a href="https://www.bits-pilani.ac.in/hyderabad/events-festivals/" target="_blank" rel="noopener noreferrer">Official Hyderabad events page <span aria-hidden="true">↗</span></a>
+          </article>
         </div>
-        <button type="button" class="floating-blue-submit" onclick="handleCodeSubmit()" title="Submit Access Code">
-          <span class="submit-label">ENTER</span>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
-          </svg>
-        </button>
+        <p class="official-events-note">Dates and current status can change. Check the official BITS pages for new announcements before making plans.</p>
       </section>
-    </div>
+    </section>
 
-    <!-- 2. STUDENT VIEW -->
+    <!-- 2. STUDENT / VISITOR DASHBOARD -->
     <div id="student-view" class="hidden student-layout">
-      <aside class="semi-circle-dock" id="semi-nav-dock" aria-label="Primary Wheel Navigation">
+      <aside class="semi-circle-dock" id="semi-nav-dock" aria-label="Campus navigation">
+        <button type="button" class="mobile-dome-handle" id="mobile-dome-handle" aria-expanded="false" aria-controls="semi-wheel" onclick="toggleMobileDome()"><span>Campus menu</span><span class="dome-handle-chevron" aria-hidden="true">⌄</span></button>
         <div class="semi-wheel-core" id="semi-wheel">
-          <div class="wheel-center-hub"><span>LC</span></div>
-          <button type="button" class="wheel-segment seg-1" onclick="switchStudentSubTab('telemetry', this)"><span class="seg-text">Map</span></button>
-          <button type="button" class="wheel-segment seg-2 active-segment" onclick="switchStudentSubTab('events', this)"><span class="seg-text">Events</span></button>
-          <button type="button" class="wheel-segment seg-3" onclick="switchStudentSubTab('contact', this)"><span class="seg-text">Contact</span></button>
-          <button type="button" class="wheel-segment seg-4" onclick="switchStudentSubTab('telemetry', this)"><span class="seg-text">Announcements</span></button>
-          <button type="button" class="wheel-segment seg-5" onclick="switchStudentSubTab('telemetry', this)"><span class="seg-text">To-do list</span></button>
+          <button type="button" class="wheel-center-hub active-segment" aria-label="Campus home" aria-current="page" onclick="switchStudentSubTab('campus', this)"><span aria-hidden="true">⌂</span><span class="sr-only">Campus home</span></button>
+          <button type="button" class="wheel-segment mobile-campus-tab" aria-label="Campus" onclick="switchStudentSubTab('campus', this)"><span class="seg-text">Campus</span></button>
+          <button type="button" class="wheel-segment seg-1" aria-label="Map" onclick="switchStudentSubTab('map', this)"><span class="seg-text">Map</span></button>
+          <button type="button" class="wheel-segment seg-2" aria-label="Events" onclick="switchStudentSubTab('events', this)"><span class="seg-text">Events</span></button>
+          <button type="button" class="wheel-segment seg-3" aria-label="Contact" onclick="switchStudentSubTab('contact', this)"><span class="seg-text">Contact</span></button>
+          <button type="button" class="wheel-segment seg-4" aria-label="Announcements" onclick="switchStudentSubTab('announcements', this)"><span class="seg-text">Announcements</span></button>
+          <button type="button" class="wheel-segment seg-5" aria-label="Progress" onclick="switchStudentSubTab('progress', this)"><span class="seg-text">Progress</span></button>
         </div>
-        <div class="wheel-hint">Hover & Scroll Wheel</div>
+        <div class="wheel-hint">Choose a campus section</div>
       </aside>
 
       <div class="student-stage-content">
-        <div id="student-events-subview">
-          <div class="section-header glass-panel">
-            <div>
-              <div style="display:flex; align-items:center; gap:0.65rem; margin-bottom:0.35rem;">
-                <span class="pill">Events</span><span class="badge">Published</span>
-              </div>
-              <h2>Annual Sports Day 2026</h2>
-              <p class="muted" id="student-welcome-text">Oct 15, 2026 • Coordinator: Prof. R. Sharma — Select an event cube below to register.</p>
+        <section id="student-campus-subview" class="student-subview campus-home">
+          <div class="campus-hero">
+            <div class="campus-hero-copy">
+              <span class="campus-eyebrow">A CAMPUS BUILT FOR WHAT'S NEXT</span>
+              <h2>BITS PILANI<br><span>— HYDERABAD</span></h2>
+              <p class="campus-hero-subtitle">THIS IS YOUR TIME TO SHINE.</p>
+              <p class="campus-hero-note">A student-made campus activity experience. Independent of BITS Pilani.</p>
+              <a class="campus-map-cta" href="https://www.google.com/maps/search/?api=1&amp;query=BITS+Pilani+Hyderabad+Campus%2C+Jawahar+Nagar%2C+Hyderabad%2C+Telangana%2C+India" target="_blank" rel="noopener noreferrer">Explore campus location <span aria-hidden="true">↗</span></a>
             </div>
+            <span class="campus-image-caption">BITS Pilani, Hyderabad campus · image provided by the project owner</span>
+          </div>
+          <div class="campus-welcome-row">
+            <div><span class="pill">CAMPUS SNAPSHOT</span><h3 id="student-welcome-text">Make your next move.</h3><p class="muted">Choose a section from the navigation wheel to explore.</p></div>
+            <span class="campus-independent-note">Unofficial student project</span>
+          </div>
+          <div class="campus-facts-grid" aria-label="Verified campus facts">
+            <article class="campus-fact-card"><span>01 / SCALE</span><strong>~200 acres</strong><p>Spread across the Hyderabad campus.</p></article>
+            <article class="campus-fact-card"><span>02 / SINCE</span><strong>Established 2008</strong><p>Academic journey began on 29 August 2008.</p></article>
+            <article class="campus-fact-card"><span>03 / LOCATION</span><strong>Jawahar Nagar</strong><p>Near Shameerpet, Hyderabad.</p></article>
+            <article class="campus-fact-card"><span>04 / CAMPUS LIFE</span><strong>Fully residential</strong><p>Academic, research, sports, and student-life facilities.</p></article>
+          </div>
+          <div class="campus-facts-source">Campus facts: <a href="https://www.bits-pilani.ac.in/hyderabad/about-us/" target="_blank" rel="noopener noreferrer">official BITS Pilani Hyderabad About Us</a> · <a href="https://www.bits-pilani.ac.in/hyderabad/student-welfare/" target="_blank" rel="noopener noreferrer">Student Welfare</a></div>
+        </section>
+
+        <section id="student-map-subview" class="student-subview hidden">
+          <div class="section-header glass-panel"><div><span class="pill">CAMPUS MAP</span><h2>Find your way</h2><p class="muted">Open the campus location in Google Maps. The map opens separately so this dashboard stays available.</p></div></div>
+          <article class="map-feature-card"><div><span class="campus-eyebrow">JAWAHAR NAGAR · SHAMEERPET</span><h3>BITS Pilani, Hyderabad Campus</h3><p>Hyderabad, Telangana, India</p></div><a class="map-open-button" href="https://www.google.com/maps/search/?api=1&amp;query=BITS+Pilani+Hyderabad+Campus%2C+Jawahar+Nagar%2C+Hyderabad%2C+Telangana%2C+India" target="_blank" rel="noopener noreferrer">View on Google Maps <span aria-hidden="true">↗</span></a></article>
+        </section>
+
+        <section id="student-events-subview" class="student-subview hidden">
+          <div class="section-header glass-panel">
+            <div><div class="section-pills"><span class="pill">EVENTS</span><span class="badge" id="student-event-count" aria-live="polite">Loading count…</span></div><h2>Campus events</h2><p class="muted" id="student-event-welcome">Select an event below to view details or register.</p></div>
             <div class="filter-group">
               <button class="btn btn-chip active-filter" id="filter-All" onclick="loadStudentEvents('All')">All</button>
               <button class="btn btn-chip" id="filter-Ongoing" onclick="loadStudentEvents('Ongoing')">Ongoing</button>
@@ -146,79 +185,31 @@
             </div>
           </div>
           <div id="student-events-grid" class="events-grid"></div>
-        </div>
+        </section>
 
-        <div id="student-contact-subview" class="hidden">
-          <div class="section-header glass-panel">
-            <div>
-              <span class="pill">Campus Directory</span>
-              <h2>Contact Command Center</h2>
-              <p class="muted">Direct lines for Larper College Event Coordinators, Hosts, and Stay Managers.</p>
-            </div>
-          </div>
+        <section id="student-contact-subview" class="student-subview hidden">
+          <div class="section-header glass-panel"><div><span class="pill">CAMPUS DIRECTORY</span><h2>Contact Command Center</h2><p class="muted">Direct lines for campus event coordinators, hosts, and stay managers.</p></div></div>
           <div class="contact-cards-stack">
-            <div class="contact-pill-card">
-              <div class="contact-avatar-orb"><img src="https://ui-avatars.com/api/?name=Prof+Sharma&background=f9182f&color=fff&size=128&bold=true" alt="Prof. R. Sharma" /></div>
-              <div class="contact-blue-body">
-                <div class="contact-role-tag">Event Coordinator</div>
-                <h3>Prof. R. Sharma</h3>
-                <p>Overall Annual Sports Day 2026 & Arena Scheduling Lead</p>
-                <div class="contact-links"><span>📞 +91 98450 11204</span><span>✉️ r.sharma@larper.edu</span></div>
-              </div>
-            </div>
-            <div class="contact-pill-card">
-              <div class="contact-avatar-orb"><img src="https://ui-avatars.com/api/?name=Coach+Meera&background=f9182f&color=fff&size=128&bold=true" alt="Coach Meera Nair" /></div>
-              <div class="contact-blue-body">
-                <div class="contact-role-tag">Event Host</div>
-                <h3>Coach Meera Nair</h3>
-                <p>Track & Field Heats, Check-in Desk & Equipment Verification</p>
-                <div class="contact-links"><span>📞 +91 98450 22890</span><span>✉️ coach@campus.edu</span></div>
-              </div>
-            </div>
-            <div class="contact-pill-card">
-              <div class="contact-avatar-orb"><img src="https://ui-avatars.com/api/?name=Rohan+Kapoor&background=f9182f&color=fff&size=128&bold=true" alt="Rohan Kapoor" /></div>
-              <div class="contact-blue-body">
-                <div class="contact-role-tag">Stay Manager</div>
-                <h3>Rohan Kapoor</h3>
-                <p>Guest Hospitality, Visitor Passes & Campus Accommodation</p>
-                <div class="contact-links"><span>📞 +91 98450 77412</span><span>✉️ stay.support@larper.edu</span></div>
-              </div>
-            </div>
+            <div class="contact-pill-card"><div class="contact-avatar-orb"><img src="https://ui-avatars.com/api/?name=Prof+Sharma&amp;background=795638&amp;color=fff&amp;size=128&amp;bold=true" alt="Prof. R. Sharma" /></div><div class="contact-blue-body"><div class="contact-role-tag">Event Coordinator</div><h3>Prof. R. Sharma</h3><p>Overall Annual Sports Day 2026 &amp; Arena Scheduling Lead</p><div class="contact-links"><span>📞 +91 98450 11204</span><span>✉️ r.sharma@larper.edu</span></div></div></div>
+            <div class="contact-pill-card"><div class="contact-avatar-orb"><img src="https://ui-avatars.com/api/?name=Coach+Meera&amp;background=795638&amp;color=fff&amp;size=128&amp;bold=true" alt="Coach Meera Nair" /></div><div class="contact-blue-body"><div class="contact-role-tag">Event Host</div><h3>Coach Meera Nair</h3><p>Track &amp; Field Heats, Check-in Desk &amp; Equipment Verification</p><div class="contact-links"><span>📞 +91 98450 22890</span></div></div></div>
+            <div class="contact-pill-card"><div class="contact-avatar-orb"><img src="https://ui-avatars.com/api/?name=Rohan+Kapoor&amp;background=795638&amp;color=fff&amp;size=128&amp;bold=true" alt="Rohan Kapoor" /></div><div class="contact-blue-body"><div class="contact-role-tag">Stay Manager</div><h3>Rohan Kapoor</h3><p>Guest Hospitality, Visitor Passes &amp; Campus Accommodation</p><div class="contact-links"><span>📞 +91 98450 77412</span><span>✉️ stay.support@larper.edu</span></div></div></div>
           </div>
-        </div>
+        </section>
 
-        <div id="student-telemetry-subview" class="hidden">
-          <div class="section-header glass-panel">
-            <div>
-              <span class="pill">Live Command Feed</span>
-              <h2>Announcements, Progress & Timeline</h2>
-              <p class="muted">Real-time arena broadcasts, heat progression, and venue conflict monitoring.</p>
-            </div>
-            <button class="btn btn-chip active-filter" onclick="switchStudentSubTab('events', document.querySelector('.seg-2'))">← Back to Events Grid</button>
+        <section id="student-announcements-subview" class="student-subview hidden">
+          <div class="section-header glass-panel"><div><span class="pill">UPDATES</span><h2>Announcements</h2><p class="muted">Campus activity notices and updates.</p></div></div>
+          <div class="glass-panel bento-box"><div class="announcement-list">
+            <div class="announcement-item"><div class="ann-icon">🕒</div><div><p class="ann-text"><strong>Notice:</strong> Relay schedule shifted by 15 mins due to rain. Track A affected.</p><span class="ann-meta">Sent 5m ago by Admin</span></div></div>
+            <div class="announcement-item"><div class="ann-icon">📢</div><div><p class="ann-text"><strong>Volunteers:</strong> Reporting for Football Match 1 please gather at Main Field.</p><span class="ann-meta">Sent 30m ago by Staff</span></div></div>
+          </div></div>
+        </section>
+
+        <section id="student-progress-subview" class="student-subview hidden">
+          <div class="section-header glass-panel"><div><span class="pill">ACTIVITY TIMELINE</span><h2>Progress &amp; real-time</h2><p class="muted">Track the current activity timeline.</p></div></div>
+          <div class="glass-panel bento-box"><p class="muted campus-live-label">● Activity Progress</p><h3>100m Sprint Heats</h3><p class="muted">08:00 AM ~ 09:30 AM · Running Track A</p>
+            <div class="progress-stepper"><div class="step-node done"><div class="dot"></div><span>Preparation</span></div><div class="step-node done"><div class="dot"></div><span>Check-in</span></div><div class="step-node active-live"><div class="dot"></div><span><strong>Heats Live</strong></span></div><div class="step-node"><div class="dot"></div><span>Results Feed</span></div><div class="step-node"><div class="dot"></div><span>Finals Scheduled</span></div></div>
           </div>
-          <div class="telemetry-bento-grid">
-            <div class="glass-panel bento-box">
-              <div class="bento-header"><h3>Announcement</h3><span class="btn-chip">+ Live Broadcasts</span></div>
-              <div class="announcement-list">
-                <div class="announcement-item"><div class="ann-icon">🕒</div><div><p class="ann-text"><strong>Notice:</strong> Relay schedule shifted by 15 mins due to rain. Track A affected.</p><span class="ann-meta">Sent 5m ago by Admin</span></div></div>
-                <div class="announcement-item"><div class="ann-icon">📢</div><div><p class="ann-text"><strong>Volunteers:</strong> Reporting for Football Match 1 please gather at Main Field.</p><span class="ann-meta">Sent 30m ago by Staff</span></div></div>
-              </div>
-            </div>
-            <div class="glass-panel bento-box">
-              <h3>Progress & Real-Time</h3>
-              <p class="muted" style="margin-top:0.35rem; color:#38bdf8; font-weight:600;">● Activity Progress</p>
-              <h4 style="font-size:1.15rem; margin-top:0.2rem;">100m Sprint Heats</h4>
-              <p class="muted" style="font-size:0.82rem;">08:00 AM ~ 09:30 AM • Running Track A</p>
-              <div class="progress-stepper">
-                <div class="step-node done"><div class="dot"></div><span>Preparation</span></div>
-                <div class="step-node done"><div class="dot"></div><span>Check-in</span></div>
-                <div class="step-node active-live"><div class="dot"></div><span><strong>Heats Live</strong></span></div>
-                <div class="step-node"><div class="dot"></div><span>Results Feed</span></div>
-                <div class="step-node"><div class="dot"></div><span>Finals Scheduled</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
 
@@ -228,9 +219,10 @@
         <span class="pill">Host Portal</span>
         <h2>Admin / Host Login</h2>
         <p class="muted">Sign in to manage event statuses, requirements, and student check-ins.</p>
-        <form onsubmit="handleAdminLogin(event)">
-          <div class="form-group"><label for="admin-email">Host Email</label><input type="email" id="admin-email" value="coach@campus.edu" required /></div>
-          <div class="form-group"><label for="admin-password">Password</label><input type="password" id="admin-password" value="coach123" required /></div>
+        <form onsubmit="handleAdminLogin(event)" autocomplete="on">
+          <div class="form-group"><label for="admin-username">Admin username</label><input type="text" id="admin-username" name="username" maxlength="128" autocomplete="username" required /></div>
+          <div class="form-group"><label for="admin-password">Password</label><input type="password" id="admin-password" name="password" autocomplete="current-password" required /></div>
+          <p id="admin-login-error" class="admin-login-error" role="alert" aria-live="polite" hidden></p>
           <button type="submit" class="btn btn-primary full-width">Login to Dashboard</button>
         </form>
       </div>
@@ -241,7 +233,8 @@
             <h2>Host Management Dashboard</h2>
             <p class="muted">Create events, update status (Draft → Published → Ongoing → Completed), and mark check-ins.</p>
           </div>
-          <button class="btn btn-secondary" onclick="loadAdminDashboard()">↻ Refresh All Events</button>
+          <div class="admin-session-actions"><button class="btn btn-secondary" onclick="loadAdminDashboard()">↻ Refresh All Events</button>
+            <button type="button" class="btn btn-secondary" onclick="logoutAdmin()">Log out</button></div>
         </div>
 
         <div class="card create-event-card glass-panel">
@@ -263,37 +256,43 @@
     </div>
   </main>
 
-  <script src="script.js"></script>
+  <aside id="echo-assistant" class="echo-assistant" aria-label="Echo voice assistant">
+    <section id="echo-panel" class="echo-panel" aria-label="Echo controls" hidden>
+      <header class="echo-panel-header"><div><strong>Echo</strong><span id="echo-status" class="echo-status">Ready</span></div>
+        <button id="echo-close" class="echo-icon-button" type="button" aria-label="Close Echo panel">×</button></header>
+      <div id="echo-user-caption" class="echo-caption echo-user-caption" aria-live="polite">Tap the orb and speak, or type a request.</div>
+      <div id="echo-reply-caption" class="echo-caption echo-reply-caption" aria-live="polite">I’m ready when you are.</div>
+      <form id="echo-form" class="echo-input-row"><label class="sr-only" for="echo-input">Type to Echo</label>
+        <input id="echo-input" type="text" maxlength="1000" placeholder="Ask Echo…" autocomplete="off" />
+        <button class="echo-send" type="submit" aria-label="Send message">Send</button></form>
+      <footer class="echo-controls"><button id="echo-stop" type="button">Stop speech</button>
+        <button id="echo-mute" type="button" aria-pressed="false">Mute</button>
+        <span class="echo-privacy-note">Speech recognition uses your browser; text is sent to the site’s configured AI.</span></footer>
+    </section>
+    <button id="echo-orb" class="echo-orb" type="button" aria-label="Start speaking to Echo" aria-expanded="false">
+      <span class="echo-orb-core" aria-hidden="true"></span><span class="sr-only">Talk to Echo</span></button>
+  </aside>
+
+  <script src="/assets/script.js"></script>
+  <script src="/assets/echo-assistant.js"></script>
+  <script src="/assets/topography-background.js?v=2" defer></script>
 
   <script>
-    // Warp Text Physics
-    const warpChars = document.querySelectorAll('.warp-char');
-    document.addEventListener('mousemove', (e) => {
-      warpChars.forEach((char) => {
-        const rect = char.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-        const maxDist = 220;
-        if (dist < maxDist) {
-          const factor = 1 - dist / maxDist;
-          const liftY = -18 * factor;
-          const scale = 1 + 0.28 * factor;
-          const skew = ((e.clientX - cx) / maxDist) * 14;
-          char.style.transform = `translateY(${liftY}px) scale(${scale}) skewX(${skew}deg)`;
-          char.style.color = '#00d2ff';
-          char.style.textShadow = '0 0 28px rgba(0, 210, 255, 0.85)';
-        } else {
-          char.style.transform = 'translateY(0) scale(1) skewX(0deg)';
-          char.style.color = '';
-          char.style.textShadow = '';
-        }
-      });
-    });
-
+    // Portal selection and code-slot synchronization
     // Code-Slots UI Sync
     const codeInputEl = document.getElementById('access-code');
     const slotBoxes = document.querySelectorAll('#code-slots-display .code-slot');
+
+    function selectPortal(role, button) {
+      const input = document.getElementById('access-code');
+      if (input) { input.value = role; updateCodeSlotsUI(role); }
+      document.querySelectorAll('.portal-option').forEach((item) => {
+        const selected = item === button;
+        item.classList.toggle('is-selected', selected);
+        item.setAttribute('aria-pressed', String(selected));
+      });
+      if (role === 'STUDENT') handleCodeSubmit();
+    }
 
     function updateCodeSlotsUI(val) {
       const clean = (val || '').toUpperCase();
@@ -324,26 +323,53 @@
       }
     }
 
-    // Sub-View Switcher
-    function switchStudentSubTab(tabName, btnEl) {
-      document.querySelectorAll('.wheel-segment').forEach(s => s.classList.remove('active-segment'));
-      if (btnEl) btnEl.classList.add('active-segment');
+    // Exactly one dashboard subview is visible at a time.
+    function switchStudentSubTab(tabName, btnEl, loadEvents = true) {
+      const allowedTabs = ['campus', 'map', 'events', 'contact', 'announcements', 'progress'];
+      if (!allowedTabs.includes(tabName)) return false;
+      const tabButtons = { campus: '.wheel-center-hub', map: '.seg-1', events: '.seg-2', contact: '.seg-3', announcements: '.seg-4', progress: '.seg-5' };
+      btnEl = btnEl || document.querySelector(tabButtons[tabName]);
+      const viewIds = {
+        campus: 'student-campus-subview', map: 'student-map-subview',
+        events: 'student-events-subview', contact: 'student-contact-subview',
+        announcements: 'student-announcements-subview', progress: 'student-progress-subview'
+      };
+      Object.values(viewIds).forEach(id => document.getElementById(id)?.classList.add('hidden'));
+      document.getElementById(viewIds[tabName])?.classList.remove('hidden');
+      document.querySelectorAll('.wheel-segment, .wheel-center-hub').forEach(button => {
+        const selected = button === btnEl;
+        button.classList.toggle('active-segment', selected);
+        if (selected) button.setAttribute('aria-current', 'page');
+        else button.removeAttribute('aria-current');
+      });
+      document.getElementById('semi-nav-dock')?.classList.remove('dome-open');
+      document.getElementById('mobile-dome-handle')?.setAttribute('aria-expanded', 'false');
+      if (tabName === 'events' && loadEvents && typeof loadStudentEvents === 'function') loadStudentEvents('All');
+      document.getElementById('student-view')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    }
 
-      const eventsSub = document.getElementById('student-events-subview');
-      const contactSub = document.getElementById('student-contact-subview');
-      const telemetrySub = document.getElementById('student-telemetry-subview');
+    function toggleMobileDome() {
+      const dock = document.getElementById('semi-nav-dock');
+      const handle = document.getElementById('mobile-dome-handle');
+      if (!dock || !handle) return;
+      const expanded = dock.classList.toggle('dome-open');
+      handle.setAttribute('aria-expanded', String(expanded));
+    }
 
-      eventsSub.classList.add('hidden');
-      contactSub.classList.add('hidden');
-      telemetrySub.classList.add('hidden');
-
-      if (tabName === 'events') {
-        eventsSub.classList.remove('hidden');
-        if (typeof loadStudentEvents === 'function') loadStudentEvents('All');
-      } else if (tabName === 'contact') {
-        contactSub.classList.remove('hidden');
-      } else {
-        telemetrySub.classList.remove('hidden');
+    // Small pointer parallax and one-time entrance reveal; no animation library required.
+    const brandSection = document.getElementById('loopin-branding');
+    if (brandSection && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      brandSection.addEventListener('pointermove', (event) => {
+        const bounds = brandSection.getBoundingClientRect();
+        brandSection.style.setProperty('--pointer-x', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 16}px`);
+        brandSection.style.setProperty('--pointer-y', `${((event.clientY - bounds.top) / bounds.height - 0.5) * 16}px`);
+      }, { passive: true });
+      if ('IntersectionObserver' in window) {
+        const revealObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
+          if (entry.isIntersecting) { entry.target.classList.add('is-visible'); revealObserver.unobserve(entry.target); }
+        }), { threshold: 0.16 });
+        document.querySelectorAll('.landing-extra').forEach((section) => revealObserver.observe(section));
       }
     }
   </script>

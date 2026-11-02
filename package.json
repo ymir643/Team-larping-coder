@@ -1,0 +1,16 @@
+{
+  "name": "loopin-topography-asset",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build:topography": "esbuild topography/mount.jsx --bundle --minify --format=iife --target=es2020 --outfile=assets/topography-background.js"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}
